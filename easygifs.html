@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EasyGifs — Animate Your Moments</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@700&family=Inconsolata:wdth,wght@112.5,400;112.5,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #ffff7b;
+    --accent-dim: #e6e65a;
+    --accent-pale: #ffffb8;
+    --dark: #1a110e;
+    --dark-mid: #2e1e19;
+    --dark-soft: #4a3028;
+    --bright: #f7f7f0;
+    --bright-dim: #eaeade;
+    --bright-muted: #d0d0c4;
+    --text-muted: #a89890;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--dark);
+    color: var(--bright);
+    font-family: 'Inconsolata', monospace;
+    font-variation-settings: 'wdth' 112.5;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.5rem 3rem;
+    border-bottom: 1px solid var(--dark-soft);
+    position: sticky; top: 0;
+    background: var(--dark); z-index: 100;
+  }
+  .logo { font-family: 'Hanken Grotesk', sans-serif; font-weight: 700; font-size: 1.5rem; text-transform: uppercase; letter-spacing: -0.02em; color: var(--accent); }
+  .logo span { color: var(--bright); }
+  .nav-tag { font-size: 0.7rem; background: var(--dark-mid); color: var(--text-muted); padding: 0.3rem 0.8rem; border-radius: 2rem; border: 1px solid var(--dark-soft); letter-spacing: 0.08em; }
+  .hero { text-align: center; padding: 5rem 2rem 4rem; position: relative; animation: fadeUp 0.5s ease both; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 600px; height: 300px; background: radial-gradient(ellipse at center, rgba(255,255,123,0.08) 0%, transparent 70%); pointer-events: none; }
+  .hero h1 { font-size: clamp(2.5rem, 6vw, 5rem); line-height: 1; margin-bottom: 1rem; color: var(--bright); }
+  .hero h1 em { color: var(--accent); font-style: normal; }
+  .hero p { font-size: 1rem; color: var(--text-muted); max-width: 480px; margin: 0 auto; line-height: 1.7; }
+  .app { max-width: 1300px; margin: 0 auto; padding: 2rem 2rem 6rem; display: grid; grid-template-columns: 1fr 380px; gap: 2rem; align-items: start; }
+  @media (max-width: 960px) { .app { grid-template-columns: 1fr; } nav { padding: 1.2rem 1.5rem; } .hero { padding: 3rem 1.5rem 2.5rem; } }
+  .panel { background: var(--dark-mid); border: 1px solid var(--dark-soft); border-radius: 12px; overflow: hidden; }
+  .panel-header { padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--dark-soft); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .panel-header h2 { font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-muted); }
+  .panel-body { padding: 1.5rem; }
+  .upload-zone { border: 2px dashed var(--dark-soft); border-radius: 8px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative; }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: rgba(255,255,123,0.04); }
+  .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { width: 48px; height: 48px; margin: 0 auto 1rem; background: var(--dark-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+  .upload-zone h3 { font-size: 0.85rem; color: var(--bright-dim); margin-bottom: 0.4rem; }
+  .upload-zone p { font-size: 0.75rem; color: var(--text-muted); }
+  .count-badge { background: var(--accent); color: var(--dark); font-family: 'Inconsolata', monospace; font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 2rem; }
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-top: 1rem; }
+  .photo-item { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: visible; cursor: grab; transition: transform 0.15s ease, opacity 0.15s ease; user-select: none; }
+  .photo-item:active { cursor: grabbing; }
+  .photo-item.dragging { opacity: 0.4; transform: scale(0.95); }
+  .photo-item.drag-target { transform: scale(1.05); outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+  .photo-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; pointer-events: none; display: block; }
+  .photo-item .order-badge { position: absolute; top: 4px; left: 4px; background: var(--dark); color: var(--accent); font-family: 'Inconsolata', monospace; font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 3px; line-height: 1.4; pointer-events: none; }
+  .photo-item .remove-btn { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; background: rgba(26,17,14,0.85); color: var(--bright-muted); border: none; border-radius: 50%; font-size: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; line-height: 1; }
+  .photo-item:hover .remove-btn { opacity: 1; }
+  .settings-grid { display: flex; flex-direction: column; gap: 1.2rem; }
+  .setting-row { display: flex; flex-direction: column; gap: 0.4rem; }
+  .setting-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+  .setting-value { font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--dark-soft); border-radius: 2px; outline: none; cursor: pointer; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; transition: transform 0.15s; }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: none; }
+  .range-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted); margin-top: 0.2rem; }
+  /* SIZE INPUTS */
+  .size-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .size-field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .size-field label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+  .size-field input[type="number"] {
+    background: var(--dark);
+    border: 1px solid var(--dark-soft);
+    border-radius: 6px;
+    color: var(--bright);
+    font-family: 'Inconsolata', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.5rem 0.7rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .size-field input[type="number"]::-webkit-inner-spin-button,
+  .size-field input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .size-field input[type="number"]:focus { border-color: var(--accent); }
+  .size-hint { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.2rem; }
+  /* TOGGLE */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1rem; background: var(--dark); border-radius: 8px; border: 1px solid var(--dark-soft); }
+  .toggle-label { display: flex; flex-direction: column; gap: 0.2rem; }
+  .toggle-label span:first-child { font-size: 0.82rem; color: var(--bright-dim); }
+  .toggle-label span:last-child { font-size: 0.68rem; color: var(--text-muted); }
+  .toggle { position: relative; width: 44px; height: 24px; cursor: pointer; }
+  .toggle input { display: none; }
+  .toggle-track { position: absolute; inset: 0; background: var(--dark-soft); border-radius: 12px; transition: background 0.2s; }
+  .toggle input:checked + .toggle-track { background: var(--accent); }
+  .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: var(--bright); border-radius: 50%; transition: transform 0.2s, background 0.2s; pointer-events: none; }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); background: var(--dark); }
+  /* PREVIEW */
+  .preview-box { background: var(--dark); border-radius: 8px; aspect-ratio: 1; max-height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .preview-empty { text-align: center; padding: 2rem; }
+  .preview-empty svg { opacity: 0.25; margin-bottom: 0.8rem; }
+  .preview-empty p { font-size: 0.75rem; color: var(--text-muted); }
+  .preview-controls { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 0; gap: 0.5rem; }
+  .preview-frame-info { font-size: 0.7rem; color: var(--text-muted); }
+  .btn-sm { background: var(--dark-soft); color: var(--bright-dim); border: none; padding: 0.35rem 0.8rem; border-radius: 4px; font-family: 'Inconsolata', monospace; font-size: 0.7rem; cursor: pointer; transition: background 0.15s, color 0.15s; }
+  .btn-sm:hover { background: var(--accent); color: var(--dark); }
+  .btn-sm.active { background: var(--accent); color: var(--dark); }
+  .progress-bar { height: 2px; background: var(--dark-soft); border-radius: 1px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 0.1s linear; width: 0%; }
+  .export-section { padding: 0 1.5rem 1.5rem; }
+  .btn-export { width: 100%; background: var(--accent); color: var(--dark); border: none; padding: 1rem 1.5rem; border-radius: 8px; font-family: 'Hanken Grotesk', sans-serif; font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
+  .btn-export:hover:not(:disabled) { background: var(--accent-pale); transform: translateY(-1px); }
+  .btn-export:active:not(:disabled) { transform: translateY(0); }
+  .btn-export:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-export.generating { background: var(--dark-soft); color: var(--accent); cursor: wait; }
+  .status-line { font-size: 0.68rem; color: var(--text-muted); text-align: center; padding: 0.6rem 1.5rem 0; min-height: 1.5rem; }
+  .status-line.ok { color: #7dff9b; }
+  .status-line.err { color: #ff7b7b; }
+  .status-line.gen { color: var(--accent); }
+  .divider { height: 1px; background: var(--dark-soft); margin: 0; }
+  .gen-progress { background: var(--dark-soft); border-radius: 4px; height: 4px; margin: 0 1.5rem; overflow: hidden; }
+  .gen-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.2s; width: 0%; }
+  footer { border-top: 1px solid var(--dark-soft); padding: 2rem 3rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); }
+  footer strong { color: var(--accent); }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--dark-mid); }
+  ::-webkit-scrollbar-thumb { background: var(--dark-soft); border-radius: 3px; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .app > * { animation: fadeUp 0.5s ease both; }
+  .app > *:nth-child(2) { animation-delay: 0.08s; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Easy<span>Gifs</span></div>
+  <div class="nav-tag">Up to 30 photos · Runs in your browser</div>
+</nav>
+
+<section class="hero">
+  <h1>Turn Photos Into<br><em>Animated Gifs</em></h1>
+  <p>Upload your photos, drag to reorder, tune the settings, and export a GIF — all in your browser, nothing uploaded.</p>
+</section>
+
+<main class="app">
+
+  <!-- LEFT -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Photos</h2>
+        <span class="count-badge" id="countBadge">0 / 30</span>
+      </div>
+      <div class="panel-body" style="padding-bottom:1rem;">
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept="image/*" multiple>
+          <div class="upload-icon">📁</div>
+          <h3>Drop images here</h3>
+          <p>or click to browse · JPG, PNG, WEBP · max 30 photos</p>
+        </div>
+        <div class="photo-grid" id="photoGrid"></div>
+        <div id="gridHint" style="font-size:0.68rem;color:var(--text-muted);margin-top:0.8rem;display:none;">↔ Drag photos to reorder frames</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+    <!-- SETTINGS -->
+    <div class="panel">
+      <div class="panel-header"><h2>Settings</h2></div>
+      <div class="panel-body">
+        <div class="settings-grid">
+
+          <!-- Duration -->
+          <div class="setting-row">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span class="setting-label">Frame duration</span>
+              <span class="setting-value" id="durationVal">500ms</span>
+            </div>
+            <input type="range" id="durationSlider" min="50" max="3000" step="50" value="500">
+            <div class="range-labels"><span>50ms</span><span>3000ms</span></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Size -->
+          <div class="setting-row">
+            <span class="setting-label" style="margin-bottom:0.4rem;">Output size (px)</span>
+            <div class="size-inputs">
+              <div class="size-field">
+                <label for="gifWidth">Width</label>
+                <input type="number" id="gifWidth" value="1080" min="50" max="2000" step="10">
+              </div>
+              <div class="size-field">
+                <label for="gifHeight">Height</label>
+                <input type="number" id="gifHeight" value="1080" min="50" max="2000" step="10">
+              </div>
+            </div>
+            <p class="size-hint">Images scale to fit inside this canvas (letterboxed)</p>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Loop -->
+          <div class="toggle-row">
+            <div class="toggle-label">
+              <span>Loop animation</span>
+              <span>Repeat the GIF indefinitely</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="loopToggle" checked>
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Live Preview</h2>
+        <button class="btn-sm active" id="btnPlay" onclick="togglePreview()">⏸ Pause</button>
+      </div>
+      <div style="padding:1rem 1.5rem 0;">
+        <div class="preview-box" id="previewBox">
+          <div class="preview-empty" id="previewEmpty">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="8" width="40" height="32" rx="4" stroke="#f7f7f0" stroke-width="2"/>
+              <circle cx="17" cy="20" r="4" stroke="#f7f7f0" stroke-width="2"/>
+              <path d="M4 32l10-8 8 6 6-5 16 11" stroke="#f7f7f0" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+            <p>Add photos to see a preview</p>
+          </div>
+          <img id="previewImg" style="display:none;" alt="Preview">
+        </div>
+        <div class="preview-controls">
+          <span class="preview-frame-info" id="frameInfo">— / — frames</span>
+          <span style="font-size:0.68rem;color:var(--text-muted);" id="loopInfo">Loop: on</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+
+      <div class="divider" style="margin-top:1rem;"></div>
+
+      <div style="padding:0.8rem 1.5rem 0;display:none;" id="genProgressWrap">
+        <div class="gen-progress"><div class="gen-fill" id="genFill"></div></div>
+      </div>
+
+      <div class="status-line" id="statusLine">Add photos to get started</div>
+
+      <div class="export-section">
+        <button class="btn-export" id="exportBtn" onclick="exportGif()" disabled>
+          <span>Export GIF</span><span>↓</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <strong>EasyGifs</strong>
+  <span>All processing happens in your browser · No data is uploaded</span>
+</footer>
+
+<!-- omggif — pure-JS GIF writer, no workers -->
+<script src="https://cdn.jsdelivr.net/npm/omggif@1.0.10/omggif.js"></script>
+<script>
+// ── Median-cut colour quantizer (per-frame local palette, best fidelity) ──────
+// Operates on raw RGBA Uint8ClampedArray from canvas.getImageData().
+// Returns { palette: Uint8Array(256*3 of R,G,B), indexed: Uint8Array(w*h) }
+function medianCutQuantize(rgba, maxColors) {
+  const n = rgba.length >> 2; // pixel count
+
+  // Sample pixels (skip fully transparent)
+  const sample = [];
+  const step = Math.max(1, Math.floor(n / 8000));
+  for (let i = 0; i < n; i += step) {
+    const o = i << 2;
+    sample.push(rgba[o], rgba[o+1], rgba[o+2]);
+  }
+
+  // Build initial cube from all sampled pixels
+  function makeCube(pixels) {
+    let rMin=255,rMax=0,gMin=255,gMax=0,bMin=255,bMax=0;
+    for (let i=0; i<pixels.length; i+=3) {
+      const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
+      if(r<rMin)rMin=r; if(r>rMax)rMax=r;
+      if(g<gMin)gMin=g; if(g>gMax)gMax=g;
+      if(b<bMin)bMin=b; if(b>bMax)bMax=b;
+    }
+    return {pixels,rMin,rMax,gMin,gMax,bMin,bMax};
+  }
+
+  function splitCube(cube) {
+    const rRange=cube.rMax-cube.rMin, gRange=cube.gMax-cube.gMin, bRange=cube.bMax-cube.bMin;
+    let ch=0;
+    if(gRange>=rRange && gRange>=bRange) ch=1;
+    else if(bRange>=rRange && bRange>=gRange) ch=2;
+    const sorted = [];
+    for(let i=0;i<cube.pixels.length;i+=3) sorted.push([cube.pixels[i],cube.pixels[i+1],cube.pixels[i+2]]);
+    sorted.sort((a,b)=>a[ch]-b[ch]);
+    const mid = sorted.length>>1;
+    const p1=[],p2=[];
+    for(let i=0;i<sorted.length;i++){const px=sorted[i];(i<mid?p1:p2).push(px[0],px[1],px[2]);}
+    return [makeCube(p1), makeCube(p2)];
+  }
+
+  let cubes = [makeCube(sample)];
+  while (cubes.length < maxColors) {
+    // Split the largest cube by volume
+    let bestIdx=0, bestVol=0;
+    for(let i=0;i<cubes.length;i++){
+      const c=cubes[i];
+      const vol=(c.rMax-c.rMin+1)*(c.gMax-c.gMin+1)*(c.bMax-c.bMin+1);
+      if(vol>bestVol){bestVol=vol;bestIdx=i;}
+    }
+    if(bestVol<=1) break;
+    const [a,b] = splitCube(cubes[bestIdx]);
+    cubes.splice(bestIdx,1,a,b);
+  }
+
+  // Compute average colour for each cube → palette
+  const palette = new Uint8Array(256*3);
+  const palColors = []; // [[r,g,b], ...]
+  for(let i=0;i<cubes.length;i++){
+    const px=cubes[i].pixels;
+    let rs=0,gs=0,bs=0,cnt=px.length/3;
+    for(let j=0;j<px.length;j+=3){rs+=px[j];gs+=px[j+1];bs+=px[j+2];}
+    const r=Math.round(rs/cnt), g=Math.round(gs/cnt), b=Math.round(bs/cnt);
+    palColors.push([r,g,b]);
+    palette[i*3]=r; palette[i*3+1]=g; palette[i*3+2]=b;
+  }
+  // Fill remaining slots with black
+  for(let i=cubes.length;i<256;i++){palette[i*3]=0;palette[i*3+1]=0;palette[i*3+2]=0;}
+
+  // Build a fast lookup: quantize 5-bit per channel → cache
+  const cache = new Int16Array(32*32*32).fill(-1);
+
+  function nearest(r,g,b){
+    const key=((r>>3)<<10)|((g>>3)<<5)|(b>>3);
+    if(cache[key]>=0) return cache[key];
+    let best=0,bestD=Infinity;
+    for(let i=0;i<palColors.length;i++){
+      const dr=r-palColors[i][0],dg=g-palColors[i][1],db=b-palColors[i][2];
+      const d=dr*dr+dg*dg+db*db;
+      if(d<bestD){bestD=d;best=i;}
+    }
+    cache[key]=best;
+    return best;
+  }
+
+  // Index every pixel in the full image
+  const indexed = new Uint8Array(n);
+  for(let i=0;i<n;i++){
+    const o=i<<2;
+    indexed[i]=nearest(rgba[o],rgba[o+1],rgba[o+2]);
+  }
+
+  return {palette, indexed, palColors};
+}
+</script>
+
+<script>
+// ── APP STATE ──────────────────────────────────────────────────────────────────
+let photos = [];
+let previewIndex = 0;
+let previewInterval = null;
+let isPlaying = true;
+let dragSrcIndex = null;
+
+const fileInput     = document.getElementById('fileInput');
+const uploadZone    = document.getElementById('uploadZone');
+const photoGrid     = document.getElementById('photoGrid');
+const countBadge    = document.getElementById('countBadge');
+const gridHint      = document.getElementById('gridHint');
+const durationSlider= document.getElementById('durationSlider');
+const durationVal   = document.getElementById('durationVal');
+const gifWidth      = document.getElementById('gifWidth');
+const gifHeight     = document.getElementById('gifHeight');
+const loopToggle    = document.getElementById('loopToggle');
+const loopInfo      = document.getElementById('loopInfo');
+const previewImg    = document.getElementById('previewImg');
+const previewEmpty  = document.getElementById('previewEmpty');
+const frameInfo     = document.getElementById('frameInfo');
+const progressFill  = document.getElementById('progressFill');
+const exportBtn     = document.getElementById('exportBtn');
+const statusLine    = document.getElementById('statusLine');
+const btnPlay       = document.getElementById('btnPlay');
+const genProgressWrap = document.getElementById('genProgressWrap');
+const genFill       = document.getElementById('genFill');
+
+// ── UPLOAD ────────────────────────────────────────────────────────────────────
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+
+function handleFiles(files) {
+  const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+  const slots = 30 - photos.length;
+  if (slots <= 0) return setStatus('Maximum of 30 photos reached', 'err');
+  const toAdd = arr.slice(0, slots);
+  let loaded = 0;
+  toAdd.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        photos.push({ src: ev.target.result, img, name: file.name });
+        loaded++;
+        if (loaded === toAdd.length) {
+          renderGrid(); restartPreview(); updateExport();
+          setStatus(`${photos.length} photo${photos.length !== 1 ? 's' : ''} ready`, 'ok');
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  if (arr.length > slots) setStatus(`Only ${slots} slot${slots !== 1 ? 's' : ''} remaining — ${arr.length - slots} skipped`, 'err');
+}
+
+// ── GRID ──────────────────────────────────────────────────────────────────────
+function renderGrid() {
+  photoGrid.innerHTML = '';
+  countBadge.textContent = `${photos.length} / 30`;
+  gridHint.style.display = photos.length > 1 ? 'block' : 'none';
+  photos.forEach((photo, i) => {
+    const item = document.createElement('div');
+    item.className = 'photo-item'; item.draggable = true; item.dataset.index = i;
+    const img = document.createElement('img'); img.src = photo.src; img.alt = photo.name;
+    const badge = document.createElement('div'); badge.className = 'order-badge'; badge.textContent = i + 1;
+    const rm = document.createElement('button'); rm.className = 'remove-btn'; rm.innerHTML = '✕'; rm.title = 'Remove';
+    rm.addEventListener('click', e => { e.stopPropagation(); removePhoto(i); });
+    item.appendChild(img); item.appendChild(badge); item.appendChild(rm);
+    item.addEventListener('dragstart', onDragStart);
+    item.addEventListener('dragover', onDragOver);
+    item.addEventListener('dragleave', onDragLeave);
+    item.addEventListener('drop', onDropItem);
+    item.addEventListener('dragend', onDragEnd);
+    photoGrid.appendChild(item);
+  });
+}
+
+function removePhoto(i) {
+  photos.splice(i, 1);
+  if (previewIndex >= photos.length) previewIndex = 0;
+  renderGrid(); restartPreview(); updateExport();
+  if (photos.length === 0) setStatus('Add photos to get started', '');
+  else setStatus(`${photos.length} photo${photos.length !== 1 ? 's' : ''} ready`, 'ok');
+}
+
+// ── DRAG REORDER ──────────────────────────────────────────────────────────────
+function onDragStart(e) { dragSrcIndex = parseInt(this.dataset.index); this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+function onDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; this.classList.add('drag-target'); }
+function onDragLeave() { this.classList.remove('drag-target'); }
+function onDropItem(e) {
+  e.preventDefault(); this.classList.remove('drag-target');
+  const dest = parseInt(this.dataset.index);
+  if (dragSrcIndex === null || dragSrcIndex === dest) return;
+  const moved = photos.splice(dragSrcIndex, 1)[0];
+  photos.splice(dest, 0, moved);
+  renderGrid(); restartPreview(); setStatus('Frame order updated', 'ok');
+}
+function onDragEnd() { document.querySelectorAll('.photo-item').forEach(el => el.classList.remove('dragging','drag-target')); dragSrcIndex = null; }
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+durationSlider.addEventListener('input', () => { durationVal.textContent = durationSlider.value + 'ms'; restartPreview(); });
+loopToggle.addEventListener('change', () => { loopInfo.textContent = 'Loop: ' + (loopToggle.checked ? 'on' : 'off'); });
+gifWidth.addEventListener('input', restartPreview);
+gifHeight.addEventListener('input', restartPreview);
+
+// Shared offscreen canvas for preview rendering
+const previewCanvas = document.createElement('canvas');
+const previewCtx = previewCanvas.getContext('2d');
+
+// ── PREVIEW ───────────────────────────────────────────────────────────────────
+function restartPreview() {
+  if (previewInterval) { clearInterval(previewInterval); previewInterval = null; }
+  if (photos.length === 0) {
+    previewImg.style.display = 'none'; previewEmpty.style.display = '';
+    frameInfo.textContent = '— / — frames'; progressFill.style.width = '0%'; return;
+  }
+  previewEmpty.style.display = 'none'; previewImg.style.display = 'block';
+  previewIndex = 0; showFrame();
+  if (photos.length > 1 && isPlaying) {
+    previewInterval = setInterval(() => {
+      previewIndex = (previewIndex + 1) % photos.length;
+      if (!loopToggle.checked && previewIndex === 0) {
+        previewIndex = photos.length - 1; clearInterval(previewInterval); previewInterval = null; return;
+      }
+      showFrame();
+    }, parseInt(durationSlider.value));
+  }
+}
+
+function getOutputSize() {
+  const W = Math.max(10, Math.min(2000, parseInt(gifWidth.value) || 480));
+  const H = Math.max(10, Math.min(2000, parseInt(gifHeight.value) || 480));
+  return { W, H };
+}
+
+function drawFrameToCanvas(img, canvas, ctx, W, H) {
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#1a110e';
+  ctx.fillRect(0, 0, W, H);
+  // Scale to FILL (cover): image fills the entire canvas, cropping if needed
+  const scale = Math.max(W / img.width, H / img.height);
+  const dw = Math.round(img.width * scale);
+  const dh = Math.round(img.height * scale);
+  const dx = Math.round((W - dw) / 2);
+  const dy = Math.round((H - dh) / 2);
+  ctx.drawImage(img, dx, dy, dw, dh);
+}
+
+function showFrame() {
+  if (!photos.length) return;
+  const { W, H } = getOutputSize();
+  drawFrameToCanvas(photos[previewIndex].img, previewCanvas, previewCtx, W, H);
+  previewImg.src = previewCanvas.toDataURL('image/png');
+  // Update preview box aspect ratio to match canvas dimensions
+  document.getElementById('previewBox').style.aspectRatio = W + ' / ' + H;
+  frameInfo.textContent = `Frame ${previewIndex + 1} / ${photos.length} · ${W}×${H}px`;
+  progressFill.style.width = ((previewIndex + 1) / photos.length * 100) + '%';
+  document.querySelectorAll('.photo-item').forEach((el, i) => {
+    el.style.outline = i === previewIndex ? '2px solid var(--accent)' : '';
+    el.style.outlineOffset = i === previewIndex ? '2px' : '';
+  });
+}
+
+function togglePreview() {
+  isPlaying = !isPlaying;
+  btnPlay.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+  btnPlay.classList.toggle('active', isPlaying);
+  if (isPlaying) restartPreview();
+  else if (previewInterval) { clearInterval(previewInterval); previewInterval = null; }
+}
+
+function updateExport() { exportBtn.disabled = photos.length < 1; }
+
+// ── GIF EXPORT — per-frame local palettes for maximum colour fidelity ─────────
+async function exportGif() {
+  if (photos.length === 0) return;
+
+  const { W, H } = getOutputSize();
+  const delay = Math.max(2, Math.round(parseInt(durationSlider.value) / 10)); // centiseconds
+  const loop = loopToggle.checked ? 0 : undefined;
+
+  exportBtn.disabled = true;
+  exportBtn.classList.add('generating');
+  exportBtn.innerHTML = '<span>Generating…</span>';
+  genProgressWrap.style.display = 'block';
+  genFill.style.width = '0%';
+  setStatus('Preparing…', 'gen');
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Allocate output buffer generously
+  const bufSize = photos.length * (W * H * 2 + 1024) + 2048;
+  const buf = new Uint8Array(bufSize);
+  const writer = new GifWriter(buf, W, H, { loop });
+
+  for (let i = 0; i < photos.length; i++) {
+    // Draw frame at output size
+    drawFrameToCanvas(photos[i].img, canvas, ctx, W, H);
+    const imageData = ctx.getImageData(0, 0, W, H);
+    const rgba = imageData.data;
+
+    setStatus(`Quantizing frame ${i+1} / ${photos.length}…`, 'gen');
+    await yieldToUI();
+
+    // Per-frame median-cut quantization — 256 colours chosen from this frame only
+    const { palette, indexed } = medianCutQuantize(rgba, 256);
+
+    // Build omggif palette: array of 256 0xRRGGBB integers — palette is already R,G,B bytes
+    const palArr = new Array(256);
+    for (let p = 0; p < 256; p++) {
+      palArr[p] = (palette[p*3] << 16) | (palette[p*3+1] << 8) | palette[p*3+2];
+    }
+
+    writer.addFrame(0, 0, W, H, indexed, { palette: palArr, delay });
+
+    genFill.style.width = ((i + 1) / photos.length * 100) + '%';
+    await yieldToUI();
+  }
+
+  const gifBytes = buf.slice(0, writer.end());
+  const blob = new Blob([gifBytes], { type: 'image/gif' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'easygifs-export.gif';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 20000);
+
+  exportBtn.classList.remove('generating');
+  exportBtn.disabled = false;
+  exportBtn.innerHTML = '<span>Export GIF</span><span>↓</span>';
+  setTimeout(() => { genProgressWrap.style.display = 'none'; genFill.style.width = '0%'; }, 800);
+  setStatus(`GIF exported — ${photos.length} frames · ${W}×${H}px`, 'ok');
+}
+
+function yieldToUI() { return new Promise(r => setTimeout(r, 0)); }
+function setStatus(msg, type) { statusLine.textContent = msg; statusLine.className = 'status-line' + (type ? ' ' + type : ''); }
+
+updateExport();
+</script>
+</body>
+</html>
