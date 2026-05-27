@@ -604,36 +604,68 @@ async function exportGif() {
     // Per-frame median-cut quantization — 256 colours chosen from this frame only
     const { palette, indexed } = medianCutQuantize(rgba, 256);
 
-    // Build omggif palette: array of 256 0xRRGGBB integers — palette is already R,G,B bytes
+// Build omggif palette: array of 256 0xRRGGBB integers — palette is already R,G,B bytes
     const palArr = new Array(256);
     for (let p = 0; p < 256; p++) {
       palArr[p] = (palette[p*3] << 16) | (palette[p*3+1] << 8) | palette[p*3+2];
     }
-
+ 
     writer.addFrame(0, 0, W, H, indexed, { palette: palArr, delay });
-
+ 
     genFill.style.width = ((i + 1) / photos.length * 100) + '%';
     await yieldToUI();
   }
-
+ 
   const gifBytes = buf.slice(0, writer.end());
   const blob = new Blob([gifBytes], { type: 'image/gif' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'easygifs-export.gif';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 20000);
-
+  const fileName = 'easygifs-export.gif';
+ 
+  // Detect mobile/touch device
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
+ 
+  if (isMobile && navigator.share && navigator.canShare) {
+    // Mobile: use Web Share API so user can save to gallery / Photos
+    const file = new File([blob], fileName, { type: 'image/gif' });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'EasyGifs export' });
+      } catch (err) {
+        // User cancelled or share failed — fall back to direct download
+        if (err.name !== 'AbortError') {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = fileName;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 20000);
+        }
+      }
+    } else {
+      // Device doesn't support file sharing — fall back
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 20000);
+    }
+  } else {
+    // Desktop: direct download
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 20000);
+  }
+ 
   exportBtn.classList.remove('generating');
   exportBtn.disabled = false;
   exportBtn.innerHTML = '<span>Export GIF</span><span>↓</span>';
   setTimeout(() => { genProgressWrap.style.display = 'none'; genFill.style.width = '0%'; }, 800);
   setStatus(`GIF exported — ${photos.length} frames · ${W}×${H}px`, 'ok');
 }
-
+ 
 function yieldToUI() { return new Promise(r => setTimeout(r, 0)); }
 function setStatus(msg, type) { statusLine.textContent = msg; statusLine.className = 'status-line' + (type ? ' ' + type : ''); }
-
+ 
 updateExport();
 </script>
 </body>
