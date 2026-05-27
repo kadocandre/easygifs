@@ -47,7 +47,8 @@
   }
   .logo { font-family: 'Hanken Grotesk', sans-serif; font-weight: 700; font-size: 1.5rem; text-transform: uppercase; letter-spacing: -0.02em; color: var(--accent); }
   .logo span { color: var(--bright); }
-  .nav-tag { font-size: 0.7rem; background: var(--dark-mid); color: var(--text-muted); padding: 0.3rem 0.8rem; border-radius: 2rem; border: 1px solid var(--dark-soft); letter-spacing: 0.08em; }
+  .nav-cta { font-family: 'Hanken Grotesk', sans-serif; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; background: var(--accent); color: var(--dark); padding: 0.45rem 1.1rem; border-radius: 2rem; text-decoration: none; transition: background 0.15s, transform 0.15s; display: inline-block; }
+  .nav-cta:hover { background: var(--accent-pale); transform: translateY(-1px); }
   .hero { text-align: center; padding: 5rem 2rem 4rem; position: relative; animation: fadeUp 0.5s ease both; }
   .hero::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 600px; height: 300px; background: radial-gradient(ellipse at center, rgba(255,255,123,0.08) 0%, transparent 70%); pointer-events: none; }
   .hero h1 { font-size: clamp(2.5rem, 6vw, 5rem); line-height: 1; margin-bottom: 1rem; color: var(--bright); }
@@ -157,7 +158,7 @@
 
 <nav>
   <div class="logo">Easy<span>Gifs</span></div>
-  <div class="nav-tag">Up to 30 photos · Runs in your browser</div>
+  <a href="index2.html" class="nav-cta">NORMAL GIFS</a>
 </nav>
 
 <section class="hero">
